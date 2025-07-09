@@ -18,16 +18,20 @@
 
   <div class="tag-checker">
     <h3>Check DICOM Tag</h3>
-    <input type="text" [(ngModel)]="dicomTag" placeholder="Enter tag (e.g. 0010,0010 or PatientName)" />
-    <select [(ngModel)]="dicomTag">
-      <option value="">Select a tag...</option>
-      <option value="0010,0010">Patient Name (0010,0010)</option>
-      <option value="0010,0020">Patient ID (0010,0020)</option>
-      <option value="0008,0060">Modality (0008,0060)</option>
-      <option value="0020,000D">Study UID (0020,000D)</option>
-      <option value="PatientSex">Patient Sex (Keyword)</option>
-    </select>
-    <button (click)="checkTag()" [disabled]="!dicomTag || !uploadedFileName">Check Tag</button>
+    <div class="tag-input-container">
+      <div class="tag-input">
+        <input type="text" [(ngModel)]="dicomTag" placeholder="Enter tag (e.g. 0010,0010 or PatientName)" />
+        <select [(ngModel)]="dicomTag">
+          <option value="">Select a tag...</option>
+          <option value="0010,0010">Patient Name (0010,0010)</option>
+          <option value="0010,0020">Patient ID (0010,0020)</option>
+          <option value="0008,0060">Modality (0008,0060)</option>
+          <option value="0020,000D">Study UID (0020,000D)</option>
+          <option value="PatientSex">Patient Sex (Keyword)</option>
+        </select>
+      </div>
+      <button (click)="checkTag()" [disabled]="!dicomTag || !uploadedFileName">Check Tag</button>
+    </div>
 
     @if (tagResult) {
     <div>
