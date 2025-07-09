@@ -1,0 +1,18 @@
+<div class="container">
+  <h2>DICOM Viewer</h2>
+
+  <input type="file" (change)="onFileSelected($event)" />
+  <button [disabled]="!selectedFile || loading" (click)="upload()">Upload & Render</button>
+
+  @if (loading) {
+    <div>Processing...</div>
+  }
+  @if (error) {
+    <div class="error">{{ error }}</div>
+  }
+  @if (previewUrl) {
+    <div class="preview">
+      <img [src]="previewUrl" alt="DICOM Preview" />
+    </div>
+  }
+</div>
