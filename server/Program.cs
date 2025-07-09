@@ -1,9 +1,12 @@
 using FellowOakDicom;
 using FellowOakDicom.Imaging;
+using server.Contracts;
+using server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddScoped<IDicomService, DicomService>();
+
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {
         policy.AllowAnyOrigin()
@@ -17,15 +20,11 @@ new DicomSetupBuilder()
     .Build();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 
 var app = builder.Build();
 
-
-//DicomImageManager.Set = new ImageSharpDicomImageManager();
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
