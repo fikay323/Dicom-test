@@ -6,6 +6,7 @@ using server.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IDicomService, DicomService>();
+builder.Services.AddSingleton<IBlobStorageService, BlobStorageService>();
 
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", policy => {

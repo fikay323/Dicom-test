@@ -7,62 +7,54 @@ namespace server.Services
 {
     public class DicomService: IDicomService
     {
-        private readonly string _uploadFolderPath = "UploadedFiles";
+        private readonly IBlobStorageService _blob;
+
+        public DicomService(IBlobStorageService blobStorageService)
+        {
+            _blob = blobStorageService;
+        }
 
         public async Task<string> UploadDicomFileAsync(IFormFile? file)
         {
             if (file == null || file.Length == 0)
                 throw new ArgumentException("No file uploaded.");
 
-            Directory.CreateDirectory(_uploadFolderPath);
-
-            string baseName = Path.GetFileNameWithoutExtension(file.FileName);
-            string extension = Path.GetExtension(file.FileName);
-            string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            string uniqueFileName = $"{baseName}_{timestamp}{extension}";
-            string fullPath = Path.Combine(_uploadFolderPath, uniqueFileName);
-
-            using var stream = new FileStream(fullPath, FileMode.Create);
-            await file.CopyToAsync(stream);
-
-            return uniqueFileName;
+            var fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.UtcNow:yyyyMMdd_HHmmss}{Path.GetExtension(file.FileName)}";
+            using var stream = file.OpenReadStream();
+            await _blob.UploadAsync(stream, fileName, file.ContentType);
+            return fileName;
         }
 
         public async Task<Stream> RenderDicomAsPngAsync(string fileName)
         {
-            var filePath = Path.Combine(_uploadFolderPath, fileName);
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException($"DICOM file not found: {fileName}");
-
-            var dicomFile = await DicomFile.OpenAsync(filePath);
+            using var stream = await _blob.DownloadAsync(fileName);
+            var dicomFile = await DicomFile.OpenAsync(stream);
 
             if (!dicomFile.Dataset.Contains(DicomTag.PixelData))
                 throw new InvalidOperationException("DICOM file does not contain image data.");
 
             var image = new DicomImage(dicomFile.Dataset, frame: 0);
-            if (image.NumberOfFrames == 0)
-                throw new InvalidOperationException("DICOM file contains no renderable frames.");
-
             var rendered = image.RenderImage();
             var sharpImage = rendered.As<SixLabors.ImageSharp.Image>();
 
-            var stream = new MemoryStream();
-            await sharpImage.SaveAsPngAsync(stream);
-            stream.Position = 0;
-            return stream;
+            var pngStream = new MemoryStream();
+            await sharpImage.SaveAsPngAsync(pngStream);
+            pngStream.Position = 0;
+
+            return pngStream;
         }
 
         public async Task<string> GetHeaderValueAsync(string fileName, string tag)
         {
-            var filePath = Path.Combine(_uploadFolderPath, fileName);
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException($"DICOM file not found: {fileName}");
+            using var stream = await _blob.DownloadAsync(fileName);
+            var dicomFile = await DicomFile.OpenAsync(stream);
 
-            var dicomFile = await DicomFile.OpenAsync(filePath);
             DicomTag? dicomTagObject = null;
 
             try { dicomTagObject = DicomTag.Parse(tag); }
-            catch { }
+            catch {
+                throw new ArgumentException($"'{tag}' is not a valid DICOM tag or known keyword.");
+            }
 
             if (dicomTagObject == null)
             {
